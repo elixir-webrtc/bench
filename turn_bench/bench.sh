@@ -18,7 +18,7 @@ DURATION=60
 SESSIONS=1
 BITRATE=50
 
-while getopts ":hc:s:d:n:b" opt; do
+while getopts ":hc:s:d:n:b:" opt; do
     case $opt in
     h)
         echo "$USAGE"
@@ -46,7 +46,7 @@ shift $((OPTIND -1))
 
 if [ $# -ne 2 ]
 then
-    echo "Bad number of positional arguments. Expected: 2, got: $#. Were TURN IP and credentials passed?"
+    echo "Bad number of positional arguments. Expected: 2, got: $# $*. Were TURN IP and credentials passed?"
     echo "$USAGE"
     exit 1
 fi
@@ -69,8 +69,9 @@ for ((i=0; i < $SESSIONS; i++)); do
     ./turn_bench -host $TURN_IP \
     -user $CREDENTIALS \
     -packetSize $PACKET_SIZE \
+    -bitrate $BITRATE \
     -duration $DURATION &
-    sleep 0.01
+    sleep 0.05
 done
 
 wait $(jobs -p)
