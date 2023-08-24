@@ -64,6 +64,10 @@ DURATION=$DURATION s
 PACKET_SIZE=$PACKET_SIZE bytes
 "
 
+# Use () i.e. subshell to spawn everything within it and trap ctrl+c 
+# to shutdown all tasks, see https://stackoverflow.com/a/52033580/9620900
+(
+trap 'kill 0' SIGINT; 
 for ((i=0; i < $SESSIONS; i++)); do
     echo "Starting session $i"
     ./turn_bench -host $TURN_IP \
@@ -73,5 +77,6 @@ for ((i=0; i < $SESSIONS; i++)); do
     -duration $DURATION &
     sleep 0.05
 done
-
 wait $(jobs -p)
+)
+
