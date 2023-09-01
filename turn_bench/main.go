@@ -155,7 +155,8 @@ func doPingTest(client *turn.Client, relayConn net.PacketConn, bitrate int, dur 
 	time.Sleep(500 * time.Millisecond)
 
 	// calculate how many packets we need to send and their interval
-	numOfPacketsToSend := bitrate * 1000 * dur / (packetSize * 8)
+	// we add 8 for UDP datagram header and 20 for ip packet header
+	numOfPacketsToSend := bitrate * 1000 * dur / ((packetSize + 20 + 8) * 8)
 	interval := dur * 1000 / numOfPacketsToSend
 
 	// prepare random data
