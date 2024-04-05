@@ -14,7 +14,7 @@ defmodule WebRTCBench.Server do
       {:ok, body, conn} = read_body(conn)
       body = Jason.decode!(body)
 
-      opts = Application.get_env(:webrtc_bench, :server)
+      opts = Application.get_env(:webrtc_bench, :opts)
       {:ok, peer_handler} = PeerHandler.start_link(:server, opts)
       answer = PeerHandler.continue_negotiation(peer_handler, body["offer"])
 

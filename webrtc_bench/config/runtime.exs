@@ -3,27 +3,15 @@ import Config
 config :webrtc_bench,
   client_address: System.get_env("WB_CLIENT"),
   server_address: System.get_env("WB_SERVER"),
-  client: %{
+  opts: %{
     audio: %{
-      tracks: 1,
-      size: 150,
-      frequency: 200
+      tracks: System.get_env("WB_TRACKS", "1") |> String.to_integer(),
+      size: System.get_env("WB_SIZE", "150") |> String.to_integer(),
+      frequency: System.get_env("WB_FREQUENCY", "200") |> String.to_integer()
     },
     video: %{
-      tracks: 1,
-      size: 1000,
-      frequency: 200
-    }
-  },
-  server: %{
-    audio: %{
-      tracks: 1,
-      size: 150,
-      frequency: 200
-    },
-    video: %{
-      tracks: 1,
-      size: 1000,
-      frequency: 200
+      tracks: System.get_env("WB_TRACKS", "1") |> String.to_integer(),
+      size: System.get_env("WB_SIZE", "1000") |> String.to_integer(),
+      frequency: System.get_env("WB_FREQUENCY", "200") |> String.to_integer()
     }
   }

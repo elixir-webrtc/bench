@@ -10,7 +10,7 @@ defmodule WebRTCBench.Client do
   end
 
   def run(address) do
-    opts = Application.get_env(:webrtc_bench, :client)
+    opts = Application.get_env(:webrtc_bench, :opts)
     {:ok, peer_handler} = PeerHandler.start_link(:client, opts)
     offer = PeerHandler.start_negotiation(peer_handler)
 
