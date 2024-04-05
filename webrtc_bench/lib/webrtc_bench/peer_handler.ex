@@ -144,6 +144,11 @@ defmodule WebRTCBench.PeerHandler do
   @impl true
   def handle_info(_msg, state), do: {:noreply, state}
 
+  @impl true
+  def terminate(reason, state) do
+    Logger.warning("PeerHandler for PeerConnection #{inspect(state.pc)} terminated with reason #{inspect(reason)}")
+  end
+
   defp handle_webrtc_msg({:connection_state_change, :connected}, state) do
     Logger.info("Connection established for #{inspect(state.pc)}")
 
