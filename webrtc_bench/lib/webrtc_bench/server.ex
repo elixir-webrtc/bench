@@ -23,8 +23,6 @@ defmodule WebRTCBench.Server do
       |> put_resp_content_type("application/json")
       |> resp(200, response_body)
       |> send_resp()
-
-      exit(:normal)
     end
   end
 

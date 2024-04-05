@@ -36,5 +36,9 @@ or, from `iex -S mix`
 WebRTCBench.client("127.0.0.1:8001")
 ```
 
-The client will start the negotiation with the server. Number of negotiated tracks and the size and frequency of sent packets are dependent
-on configuration in `config/runtime.exs`.
+The client will start the negotiation with the server using a single PeerConnection. Number of negotiated tracks and the size and frequency of
+sent packets are dependent on configuration in `config/runtime.exs`.
+
+> [!WARNING]
+> The number of audio/video tracks send by the client must be greater of equal to number of audio/video tracks send by the server.
+> Otherwise, the benchmark will not work as expected.
