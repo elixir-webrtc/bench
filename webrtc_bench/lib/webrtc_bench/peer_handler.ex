@@ -28,8 +28,12 @@ defmodule WebRTCBench.PeerHandler do
     }
   ]
 
-  def start_link(type, opts) do
-    GenServer.start_link(__MODULE__, {type, opts})
+  def start(type) do
+    GenServer.start(__MODULE__, type)
+  end
+
+  def start_link(type) do
+    GenServer.start_link(__MODULE__, type)
   end
 
   def start_negotiation(peer_handler) do
@@ -45,7 +49,9 @@ defmodule WebRTCBench.PeerHandler do
   end
 
   @impl true
-  def init({type, opts}) do
+  def init(type) do
+    opts = Application.get_env(:webrtc_bench, :opts)
+
     {:ok, pc} =
       PeerConnection.start_link(
         ice_servers: @ice_servers,
@@ -146,7 +152,9 @@ defmodule WebRTCBench.PeerHandler do
 
   @impl true
   def terminate(reason, state) do
-    Logger.warning("PeerHandler for PeerConnection #{inspect(state.pc)} terminated with reason #{inspect(reason)}")
+    Logger.warning(
+      "PeerHandler for PeerConnection #{inspect(state.pc)} terminated with reason #{inspect(reason)}"
+    )
   end
 
   defp handle_webrtc_msg({:connection_state_change, :connected}, state) do

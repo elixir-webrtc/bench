@@ -28,6 +28,11 @@ defmodule WebRTCBench do
           raise "Both client and server address env vars were set"
       end
 
-    Supervisor.start_link(children, strategy: :one_for_one, name: WebRTCBench.Supervisor)
+    ph_supervisor = {DynamicSupervisor, name: __MODULE__.PeerHandlerSupervisor}
+
+    Supervisor.start_link([ph_supervisor | children],
+      strategy: :one_for_one,
+      name: __MODULE__.Supervisor
+    )
   end
 end

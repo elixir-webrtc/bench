@@ -2,7 +2,7 @@ defmodule WebRTCBench.Server do
   defmodule ServerPlug do
     import Plug.Conn
 
-    alias WebRTCBench.PeerHandler
+    alias WebRTCBench.{PeerHandler, PeerHandlerSupervisor}
 
     @behaviour Plug
 
@@ -14,8 +14,9 @@ defmodule WebRTCBench.Server do
       {:ok, body, conn} = read_body(conn)
       body = Jason.decode!(body)
 
-      opts = Application.get_env(:webrtc_bench, :opts)
-      {:ok, peer_handler} = PeerHandler.start_link(:server, opts)
+      {:ok, peer_handler} =
+        DynamicSupervisor.start_child(PeerHandlerSupervisor, {PeerHandler, :server})
+
       answer = PeerHandler.continue_negotiation(peer_handler, body["offer"])
 
       response_body = Jason.encode!(%{answer: answer})
