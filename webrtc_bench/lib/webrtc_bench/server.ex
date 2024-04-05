@@ -1,7 +1,7 @@
 defmodule WebRTCBench.Server do
   defmodule ServerPlug do
     import Plug.Conn
-     
+
     alias WebRTCBench.PeerHandler
 
     @behaviour Plug
@@ -19,6 +19,7 @@ defmodule WebRTCBench.Server do
       answer = PeerHandler.continue_negotiation(peer_handler, body["offer"])
 
       response_body = Jason.encode!(%{answer: answer})
+
       conn
       |> put_resp_content_type("application/json")
       |> resp(200, response_body)
@@ -37,6 +38,7 @@ defmodule WebRTCBench.Server do
   def start_link(address) do
     [ip, port] = String.split(address, ":")
     port = String.to_integer(port)
+
     {:ok, ip} =
       ip
       |> String.to_charlist()

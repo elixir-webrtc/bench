@@ -16,7 +16,7 @@ defmodule WebRTCBench.PeerHandler do
       payload_type: 96,
       mime_type: "video/VP8",
       clock_rate: 90_000
-    },
+    }
   ]
 
   @audio_codecs [
@@ -25,7 +25,7 @@ defmodule WebRTCBench.PeerHandler do
       mime_type: "audio/opus",
       clock_rate: 48_000,
       channels: 2
-    },
+    }
   ]
 
   def start_link(type, opts) do
@@ -46,11 +46,12 @@ defmodule WebRTCBench.PeerHandler do
 
   @impl true
   def init({type, opts}) do
-    {:ok, pc} = PeerConnection.start_link(
-      ice_servers: @ice_servers,
-      audio_codecs: @audio_codecs,
-      video_codecs: @video_codecs
-    )
+    {:ok, pc} =
+      PeerConnection.start_link(
+        ice_servers: @ice_servers,
+        audio_codecs: @audio_codecs,
+        video_codecs: @video_codecs
+      )
 
     Logger.info("Started PeerConnection, #{inspect(pc)}")
 
@@ -176,22 +177,25 @@ defmodule WebRTCBench.PeerHandler do
   end
 
   defp wait_for_candidates(0), do: :ok
+
   defp wait_for_candidates(n) do
     receive do
-        {:ex_webrtc, _from, {:ice_candidate, _}} -> wait_for_candidates(n - 1)
-      after
-        500 -> raise "Candiate gathering took unexpectedly long" 
+      {:ex_webrtc, _from, {:ice_candidate, _}} -> wait_for_candidates(n - 1)
+    after
+      500 -> raise "Candiate gathering took unexpectedly long"
     end
   end
 
   defp start_sending(pc, track_id, opts) do
-    {:ok, pid} = Task.start_link(fn ->
-      payload = <<0::(opts.size)*8>>
-      packet = ExRTP.Packet.new(payload, sequence_number: Enum.random(0..0xFFFF))
-      time = div(1000, opts.frequency)
+    {:ok, pid} =
+      Task.start_link(fn ->
+        payload = <<0::opts.size*8>>
+        packet = ExRTP.Packet.new(payload, sequence_number: Enum.random(0..0xFFFF))
+        time = div(1000, opts.frequency)
 
-      send_packet(pc, track_id, packet, time)
-    end)
+        send_packet(pc, track_id, packet, time)
+      end)
+
     send(pid, :send)
   end
 

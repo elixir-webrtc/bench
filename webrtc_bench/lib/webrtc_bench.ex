@@ -17,9 +17,15 @@ defmodule WebRTCBench do
         {nil, nil} ->
           Logger.warning("Neither client or server address env var was set")
           []
-        {address, nil} -> [{Client, address}]
-        {nil, address} -> [{Server, address}]
-        {_, _} -> raise "Both client and server address env vars were set"
+
+        {address, nil} ->
+          [{Client, address}]
+
+        {nil, address} ->
+          [{Server, address}]
+
+        {_, _} ->
+          raise "Both client and server address env vars were set"
       end
 
     Supervisor.start_link(children, strategy: :one_for_one, name: WebRTCBench.Supervisor)
