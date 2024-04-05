@@ -17,12 +17,12 @@ config :webrtc_bench,
   },
   server: %{
     audio: %{
-      tracks: 6,
+      tracks: 1,
       size: 150,
       frequency: 200
     },
     video: %{
-      tracks: 6,
+      tracks: 1,
       size: 1000,
       frequency: 200
     }
