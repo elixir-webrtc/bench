@@ -4,6 +4,7 @@ defmodule WebRTCBench.PeerHandler do
   require Logger
 
   alias ExWebRTC.{MediaStreamTrack, PeerConnection, SessionDescription, RTPCodecParameters}
+  alias __MODULE__.Sender
 
   @log_interval 2000
 
@@ -11,22 +12,18 @@ defmodule WebRTCBench.PeerHandler do
     %{urls: "stun:stun.l.google.com:19302"}
   ]
 
-  @video_codecs [
-    %RTPCodecParameters{
-      payload_type: 96,
-      mime_type: "video/VP8",
-      clock_rate: 90_000
-    }
-  ]
+  @video_codec %RTPCodecParameters{
+    payload_type: 96,
+    mime_type: "video/VP8",
+    clock_rate: 90_000
+  }
 
-  @audio_codecs [
-    %RTPCodecParameters{
-      payload_type: 111,
-      mime_type: "audio/opus",
-      clock_rate: 48_000,
-      channels: 2
-    }
-  ]
+  @audio_codec %RTPCodecParameters{
+    payload_type: 111,
+    mime_type: "audio/opus",
+    clock_rate: 48_000,
+    channels: 2
+  }
 
   def start(type) do
     GenServer.start(__MODULE__, type)
@@ -55,8 +52,8 @@ defmodule WebRTCBench.PeerHandler do
     {:ok, pc} =
       PeerConnection.start_link(
         ice_servers: @ice_servers,
-        audio_codecs: @audio_codecs,
-        video_codecs: @video_codecs
+        audio_codecs: [@audio_codec],
+        video_codecs: [@video_codec]
       )
 
     Logger.info("Started PeerConnection, #{inspect(pc)}")
@@ -152,7 +149,7 @@ defmodule WebRTCBench.PeerHandler do
 
   @impl true
   def terminate(reason, state) do
-    Logger.warning(
+    Logger.error(
       "PeerHandler for PeerConnection #{inspect(state.pc)} terminated with reason #{inspect(reason)}"
     )
   end
@@ -162,12 +159,12 @@ defmodule WebRTCBench.PeerHandler do
 
     for %{id: id} <- state.audio_tracks do
       Logger.info("Starting sending for audio track #{inspect(id)}")
-      start_sending(state.pc, id, state.audio_opts)
+      Sender.start_link(state.pc, id, @audio_codec.clock_rate, state.audio_opts)
     end
 
     for %{id: id} <- state.video_tracks do
       Logger.info("Starting sending for video track #{inspect(id)}")
-      start_sending(state.pc, id, state.video_opts)
+      Sender.start_link(state.pc, id, @video_codec.clock_rate, state.video_opts)
     end
 
     Process.send_after(self(), :log, @log_interval)
@@ -196,30 +193,6 @@ defmodule WebRTCBench.PeerHandler do
       {:ex_webrtc, _from, {:ice_candidate, _}} -> wait_for_candidates(n - 1)
     after
       500 -> raise "Candiate gathering took unexpectedly long"
-    end
-  end
-
-  defp start_sending(pc, track_id, opts) do
-    {:ok, pid} =
-      Task.start_link(fn ->
-        payload = <<0::opts.size*8>>
-        packet = ExRTP.Packet.new(payload, sequence_number: Enum.random(0..0xFFFF))
-        time = div(1000, opts.frequency)
-
-        send_packet(pc, track_id, packet, time)
-      end)
-
-    send(pid, :send)
-  end
-
-  defp send_packet(pc, track_id, packet, time) do
-    receive do
-      :send ->
-        Process.send_after(self(), :send, time)
-        PeerConnection.send_rtp(pc, track_id, packet)
-
-        packet = %{packet | sequence_number: packet.sequence_number + 1}
-        send_packet(pc, track_id, packet, time)
     end
   end
 
