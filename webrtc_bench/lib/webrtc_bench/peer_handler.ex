@@ -56,6 +56,8 @@ defmodule WebRTCBench.PeerHandler do
         video_codecs: [@video_codec]
       )
 
+    Process.monitor(pc)
+
     Logger.info("Started PeerConnection, #{inspect(pc)}")
 
     audio_tracks =
@@ -83,7 +85,8 @@ defmodule WebRTCBench.PeerHandler do
       video_tracks: video_tracks,
       audio_opts: Map.take(opts.audio, [:size, :frequency]),
       video_opts: Map.take(opts.video, [:size, :frequency]),
-      bytes_received: 0
+      bytes_received: %{},
+      last_timestamp: %{}
     }
 
     {:ok, state}
@@ -137,11 +140,40 @@ defmodule WebRTCBench.PeerHandler do
   @impl true
   def handle_info(:log, state) do
     Process.send_after(self(), :log, @log_interval)
-    bitrate = round(state.bytes_received * 8 / @log_interval * 1000)
-    bitrate_str = bitrate_to_str(bitrate)
-    Logger.info("Incoming bitrate: #{bitrate_str}")
 
-    {:noreply, %{state | bytes_received: 0}}
+    byte_rates = Enum.map(state.bytes_received, fn {_k, v} -> v / @log_interval * 1000 end)
+
+    {total_bitrate, avg_bitrate, min_bitrate, max_bitrate} =
+      case length(byte_rates) do
+        0 ->
+          [0, 0, 0, 0]
+          |> Enum.map(&bytes_to_bitrate/1)
+          |> List.to_tuple()
+
+        len ->
+          min_bitrate = Enum.min(byte_rates) |> bytes_to_bitrate()
+          max_bitrate = Enum.max(byte_rates) |> bytes_to_bitrate()
+          total_bytes = Enum.sum(byte_rates)
+          total_bitrate = total_bytes |> bytes_to_bitrate()
+          avg_bitrate = (total_bytes / len) |> bytes_to_bitrate()
+          {total_bitrate, avg_bitrate, min_bitrate, max_bitrate}
+      end
+
+    Logger.info(
+      "Incoming bitrate: total = #{total_bitrate}, avg = #{avg_bitrate}, min = #{min_bitrate}, max = #{max_bitrate}"
+    )
+
+    bytes_received = Map.new(state.bytes_received, fn {k, _v} -> {k, 0} end)
+    {:noreply, %{state | bytes_received: bytes_received}}
+  end
+
+  @impl true
+  def handle_info({:DOWN, _ref, :process, _pid, reason}, state) do
+    Logger.warning(
+      "PeerConnection #{inspect(state.pc)} terminated with reason #{inspect(reason)}"
+    )
+
+    {:noreply, state}
   end
 
   @impl true
@@ -149,21 +181,19 @@ defmodule WebRTCBench.PeerHandler do
 
   @impl true
   def terminate(reason, state) do
-    Logger.error(
+    Logger.warning(
       "PeerHandler for PeerConnection #{inspect(state.pc)} terminated with reason #{inspect(reason)}"
     )
   end
 
   defp handle_webrtc_msg({:connection_state_change, :connected}, state) do
-    Logger.info("Connection established for #{inspect(state.pc)}")
+    Logger.info("Connection established for #{inspect(state.pc)}, starting sending tracks")
 
     for %{id: id} <- state.audio_tracks do
-      Logger.info("Starting sending for audio track #{inspect(id)}")
       Sender.start_link(state.pc, id, @audio_codec.clock_rate, state.audio_opts)
     end
 
     for %{id: id} <- state.video_tracks do
-      Logger.info("Starting sending for video track #{inspect(id)}")
       Sender.start_link(state.pc, id, @video_codec.clock_rate, state.video_opts)
     end
 
@@ -171,8 +201,13 @@ defmodule WebRTCBench.PeerHandler do
     state
   end
 
-  defp handle_webrtc_msg({:rtp, _id, packet}, state) do
-    bytes_received = state.bytes_received + byte_size(packet.payload)
+  defp handle_webrtc_msg({:track, %{id: id}}, state) do
+    bytes_received = Map.put(state.bytes_received, id, 0)
+    %{state | bytes_received: bytes_received}
+  end
+
+  defp handle_webrtc_msg({:rtp, id, packet}, state) do
+    bytes_received = Map.update!(state.bytes_received, id, &(&1 + byte_size(packet.payload)))
     %{state | bytes_received: bytes_received}
   end
 
@@ -196,7 +231,9 @@ defmodule WebRTCBench.PeerHandler do
     end
   end
 
-  defp bitrate_to_str(bitrate) when bitrate < 1000, do: "#{bitrate} bit/s"
-  defp bitrate_to_str(bitrate) when bitrate < 1_000_000, do: "#{bitrate / 1000} kbit/s"
-  defp bitrate_to_str(bitrate), do: "#{bitrate / 1_000_000} mbit/s"
+  defp bytes_to_bitrate(bytes), do: format_bitrate(bytes * 8)
+
+  defp format_bitrate(bitrate) when bitrate < 1000, do: "#{bitrate} bit/s"
+  defp format_bitrate(bitrate) when bitrate < 1_000_000, do: "#{bitrate / 1000} kbit/s"
+  defp format_bitrate(bitrate), do: "#{bitrate / 1_000_000} mbit/s"
 end
