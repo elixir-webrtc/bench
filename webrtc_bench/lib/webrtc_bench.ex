@@ -15,7 +15,7 @@ defmodule WebRTCBench do
     children =
       case {client_address, server_address} do
         {nil, nil} ->
-          Logger.warning("Neither client or server address env var was set")
+          Logger.warning("Neither client nor server address env var was set")
           []
 
         {address, nil} ->

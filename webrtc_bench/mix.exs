@@ -21,7 +21,6 @@ defmodule WebRTCBench.MixProject do
   defp deps do
     [
       {:ex_webrtc, github: "elixir-webrtc/ex_webrtc"},
-      {:ex_ice, github: "elixir-webrtc/ex_ice", branch: "ta-timeout-opt", override: true},
       {:plug, "~> 1.15.0"},
       {:bandit, "~> 1.4.0"},
       {:req, "~> 0.4.0"}

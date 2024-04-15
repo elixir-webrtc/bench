@@ -76,5 +76,5 @@ mix run --no-halt
 The second machine will start the negotiation and then start sending 10 video tracks, around 200 packets with 1200 bytes of payload for every track.
 
 > [!WARNING]
-> The number of audio/video tracks send by the client must be greater of equal to number of audio/video tracks send by the server.
+> The number of audio/video tracks sent by the client must be greater than or equal to the number of audio/video tracks sent by the server.
 > Otherwise, the negotiation will fail.

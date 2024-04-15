@@ -56,8 +56,6 @@ defmodule WebRTCBench.PeerHandler do
         video_codecs: [@video_codec]
       )
 
-    Process.monitor(pc)
-
     Logger.info("Started PeerConnection, #{inspect(pc)}")
 
     audio_tracks =
@@ -168,15 +166,6 @@ defmodule WebRTCBench.PeerHandler do
   end
 
   @impl true
-  def handle_info({:DOWN, _ref, :process, _pid, reason}, state) do
-    Logger.warning(
-      "PeerConnection #{inspect(state.pc)} terminated with reason #{inspect(reason)}"
-    )
-
-    {:noreply, state}
-  end
-
-  @impl true
   def handle_info(_msg, state), do: {:noreply, state}
 
   @impl true
@@ -214,20 +203,18 @@ defmodule WebRTCBench.PeerHandler do
   defp handle_webrtc_msg(_msg, state), do: state
 
   defp get_local_description(pc) do
-    wait_for_candidates(1)
+    wait_for_candidates()
 
     pc
     |> PeerConnection.get_local_description()
     |> SessionDescription.to_json()
   end
 
-  defp wait_for_candidates(0), do: :ok
-
-  defp wait_for_candidates(n) do
+  defp wait_for_candidates() do
     receive do
-      {:ex_webrtc, _from, {:ice_candidate, _}} -> wait_for_candidates(n - 1)
+      {:ex_webrtc, _from, {:ice_gathering_state_change, :complete}} -> :ok
     after
-      500 -> raise "Candiate gathering took unexpectedly long"
+      2000 -> raise "Candiate gathering took unexpectedly long"
     end
   end
 
