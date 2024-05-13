@@ -97,7 +97,10 @@ defmodule WebRTCBench.PeerHandler do
 
     desc = get_local_description(state.pc)
 
-    Logger.info("Sent offer from #{inspect(state.pc)}")
+    Logger.info("""
+    Sent offer from #{inspect(state.pc)}, offer:
+    #{desc["sdp"]}
+    """)
 
     {:reply, desc, state}
   end
@@ -106,7 +109,10 @@ defmodule WebRTCBench.PeerHandler do
   def handle_call({:continue_negotiation, offer}, _from, %{type: :server} = state) do
     offer = SessionDescription.from_json(offer)
 
-    Logger.info("Received offer for #{inspect(state.pc)}")
+    Logger.info("""
+    Received offer for #{inspect(state.pc)}, offer:
+    #{offer.sdp}
+    """)
 
     :ok = PeerConnection.set_remote_description(state.pc, offer)
     {:ok, answer} = PeerConnection.create_answer(state.pc)
@@ -114,7 +120,10 @@ defmodule WebRTCBench.PeerHandler do
 
     desc = get_local_description(state.pc)
 
-    Logger.info("Sent answer from #{inspect(state.pc)}")
+    Logger.info("""
+    Sent answer from #{inspect(state.pc)}, answer:
+    #{desc["sdp"]}
+    """)
 
     {:reply, desc, state}
   end
@@ -124,7 +133,10 @@ defmodule WebRTCBench.PeerHandler do
     answer = SessionDescription.from_json(answer)
     :ok = PeerConnection.set_remote_description(state.pc, answer)
 
-    Logger.info("Received answer for #{inspect(state.pc)}")
+    Logger.info("""
+    Received answer for #{inspect(state.pc)}, answer:
+    #{answer.sdp}
+    """)
 
     {:reply, :ok, state}
   end
