@@ -10,7 +10,10 @@ defmodule WebRTCBench.PeerHandler.StatLogger do
   end
 
   def record_packet(id, packet) do
-    GenServer.cast(__MODULE__, {:record_packet, id, packet})
+    size = byte_size(packet.payload)
+    <<timestamp::128, _rest::binary>> = packet.payload
+
+    GenServer.cast(__MODULE__, {:record_packet, id, %{size: size, timestamp: timestamp}})
   end
 
   @impl true
@@ -21,13 +24,12 @@ defmodule WebRTCBench.PeerHandler.StatLogger do
   end
 
   @impl true
-  def handle_cast({:record_packet, id, packet}, state) do
-    payload_len = byte_size(packet.payload)
-    bytes = Map.update(state.bytes, id, 0, &(&1 + payload_len))
+  def handle_cast({:record_packet, id, data}, state) do
+    %{size: size, timestamp: timestamp} = data
+    bytes = Map.update(state.bytes, id, 0, &(&1 + size))
 
     # latency in ms
     # we keep all of the latencies in a single array
-    <<timestamp::128, _rest::binary>> = packet.payload
     latency = (System.os_time(:nanosecond) - timestamp) / 1_000_000
     latencies = [latency | state.latencies]
 
