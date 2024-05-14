@@ -4,18 +4,16 @@ defmodule WebRTCBench.PeerHandler.Sender do
   alias ExWebRTC.PeerConnection
   alias ExRTP.Packet
 
+  @nano_in_sec System.convert_time_unit(1, :second, :nanosecond)
+
   def start_link(pc, track_id, clock_rate, opts) do
     GenServer.start_link(__MODULE__, {pc, track_id, clock_rate, opts})
   end
 
   @impl true
   def init({pc, track_id, clock_rate, opts}) do
-    interval =
-      1
-      |> System.convert_time_unit(:second, :native)
-      |> div(opts.frequency)
-
-    now = System.monotonic_time()
+    interval = div(@nano_in_sec, opts.frequency)
+    now = now()
 
     state = %{
       pc: pc,
@@ -35,12 +33,14 @@ defmodule WebRTCBench.PeerHandler.Sender do
 
   @impl true
   def handle_info(:send_packet, state) do
-    now = System.monotonic_time()
-
+    now = now()
     Process.send_after(self(), :send_packet, get_send_delay(now, state))
 
     timestamp = get_timestamp(now, state)
-    payload = <<0::state.size*8>>
+
+    payload_len = state.size * 8 - 128
+    payload = <<now::128, 0::size(payload_len)>>
+
     packet = Packet.new(payload, timestamp: timestamp, sequence_number: state.seq_no)
     PeerConnection.send_rtp(state.pc, state.track_id, packet)
 
@@ -48,18 +48,18 @@ defmodule WebRTCBench.PeerHandler.Sender do
     {:noreply, state}
   end
 
+  defp now(), do: System.os_time(:nanosecond)
+
   defp get_send_delay(now, state) do
     diff = state.next_time - now
 
     (state.interval + diff)
-    |> System.convert_time_unit(:native, :millisecond)
+    |> System.convert_time_unit(:nanosecond, :millisecond)
     |> max(0)
   end
 
   defp get_timestamp(now, state) do
-    native_in_sec = System.convert_time_unit(1, :second, :native)
     diff = now - state.base_time
-
-    div(diff * state.clock_rate, native_in_sec)
+    div(diff * state.clock_rate, @nano_in_sec)
   end
 end

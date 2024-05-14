@@ -20,10 +20,11 @@ defmodule WebRTCBench.MixProject do
 
   defp deps do
     [
-      {:ex_webrtc, github: "elixir-webrtc/ex_webrtc"},
+      {:ex_webrtc, "~> 0.2.0"},
       {:plug, "~> 1.15.0"},
       {:bandit, "~> 1.4.0"},
-      {:req, "~> 0.4.0"}
+      {:req, "~> 0.4.0"},
+      {:statistics, "~> 0.6.0"}
     ]
   end
 end

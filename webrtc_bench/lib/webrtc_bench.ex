@@ -4,35 +4,23 @@ defmodule WebRTCBench do
   require Logger
 
   alias __MODULE__.{Client, Server}
+  alias __MODULE__.PeerHandler.StatLogger
 
   @impl true
   def start(_type, _args) do
-    Logger.info("Starting WebRTC Bench with system pid #{System.pid()}")
+    Logger.info("Starting WebRTC Bench, OS pid: #{System.pid()}")
 
-    client_address = Application.get_env(:webrtc_bench, :client_address)
-    server_address = Application.get_env(:webrtc_bench, :server_address)
+    address = Application.get_env(:webrtc_bench, :address)
 
-    children =
-      case {client_address, server_address} do
-        {nil, nil} ->
-          Logger.warning("Neither client nor server address env var was set")
-          []
-
-        {address, nil} ->
-          [{Client, address}]
-
-        {nil, address} ->
-          [{Server, address}]
-
-        {_, _} ->
-          raise "Both client and server address env vars were set"
+    handler =
+      case System.argv() do
+        ["server"] -> {Server, address}
+        ["client"] -> {Client, address}
+        _other -> raise "Pass either 'server' or 'client' as a command line argument"
       end
 
     ph_supervisor = {DynamicSupervisor, name: __MODULE__.PeerHandlerSupervisor}
-
-    Supervisor.start_link([ph_supervisor | children],
-      strategy: :one_for_one,
-      name: __MODULE__.Supervisor
-    )
+    children = [handler, ph_supervisor, StatLogger]
+    Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__.Supervisor)
   end
 end
