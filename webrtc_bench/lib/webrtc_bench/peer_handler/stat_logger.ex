@@ -3,7 +3,7 @@ defmodule WebRTCBench.PeerHandler.StatLogger do
 
   require Logger
 
-  @log_interval 2000
+  @log_interval 5000
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
@@ -12,8 +12,9 @@ defmodule WebRTCBench.PeerHandler.StatLogger do
   def record_packet(id, packet) do
     size = byte_size(packet.payload)
     <<timestamp::128, _rest::binary>> = packet.payload
+    latency = (System.os_time(:nanosecond) - timestamp) / 1_000_000
 
-    GenServer.cast(__MODULE__, {:record_packet, id, %{size: size, timestamp: timestamp}})
+    GenServer.cast(__MODULE__, {:record_packet, id, %{size: size, latency: latency}})
   end
 
   @impl true
@@ -25,12 +26,9 @@ defmodule WebRTCBench.PeerHandler.StatLogger do
 
   @impl true
   def handle_cast({:record_packet, id, data}, state) do
-    %{size: size, timestamp: timestamp} = data
+    %{size: size, latency: latency} = data
     bytes = Map.update(state.bytes, id, 0, &(&1 + size))
 
-    # latency in ms
-    # we keep all of the latencies in a single array
-    latency = (System.os_time(:nanosecond) - timestamp) / 1_000_000
     latencies = [latency | state.latencies]
 
     state = %{bytes: bytes, latencies: latencies}
@@ -84,7 +82,8 @@ defmodule WebRTCBench.PeerHandler.StatLogger do
       "max" => Statistics.max(values),
       "mean" => Statistics.mean(values),
       "median" => Statistics.median(values),
-      "99th %" => Statistics.percentile(values, 99)
+      "99th %" => Statistics.percentile(values, 99),
+      "stdev" => Statistics.stdev(values)
     }
     |> Map.drop(excluded)
   end

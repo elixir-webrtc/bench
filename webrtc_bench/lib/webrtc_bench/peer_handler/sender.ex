@@ -26,7 +26,7 @@ defmodule WebRTCBench.PeerHandler.Sender do
       next_time: now + interval
     }
 
-    send(self(), :send_packet)
+    Process.send_after(self(), :send_packet, Enum.random(1..1000))
 
     {:ok, state}
   end

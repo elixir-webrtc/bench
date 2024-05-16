@@ -162,7 +162,10 @@ defmodule WebRTCBench.PeerHandler do
         track
       end
 
-    Logger.info("Added #{opts[type].tracks} #{Atom.to_string(type)} track(s) to #{inspect(pc)}")
+    Logger.info("""
+    Added #{opts[type].tracks} #{Atom.to_string(type)} track(s) to #{inspect(pc)}
+    Packet size = #{opts[type].size} bytes, target frequency = #{opts[type].frequency} packets/s
+    """)
 
     tracks
   end

@@ -1,6 +1,7 @@
 import Config
 
 config :webrtc_bench,
+  type: System.get_env("WB_TYPE"),
   address: System.get_env("WB_ADDRESS", "127.0.0.1:5002"),
   opts: %{
     audio: %{

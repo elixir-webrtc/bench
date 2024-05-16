@@ -13,7 +13,7 @@ defmodule WebRTCBench.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :wx, :observer, :runtime_tools],
+      extra_applications: [:logger, :wx, :observer, :runtime_tools, :tools],
       mod: {WebRTCBench, []}
     ]
   end
