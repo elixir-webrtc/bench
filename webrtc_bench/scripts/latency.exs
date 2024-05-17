@@ -1,5 +1,5 @@
 # requires format:
-# "#{track_id} #{timestamp_in_ms} #{latency_in_ms}" split by newlines
+# "#{type} #{timestamp_in_ms} #{latency_in_ms}" split by newlines
 
 Mix.install([{:statistics, "~> 0.6.0"}])
 
